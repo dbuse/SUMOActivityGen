@@ -54,6 +54,8 @@ def get_options(cmd_args):
         '-c', type=str, dest='config', required=True,
         help='JSON configuration file.')
     parser.add_argument(
+        '--slice', '-s', type=int, dest='slices', action='append')
+    parser.add_argument(
         '--profiling', dest='profiling', action='store_true',
         help='Enable Python3 cProfile feature.')
     parser.add_argument(
@@ -1353,6 +1355,16 @@ def main(cmd_args):
 
     logging.info('Loading configuration file %s.', args.config)
     conf = _load_configurations(args.config)
+
+    # filter slices if given as args
+    if args.slices:
+        logging.info('Limiting slices to %s', args.slices)
+        slice_list = list(sorted(conf['slices'].items()))
+        conf['slices'] = dict(slice_list[slice_nr] for slice_nr in args.slices)
+        logging.debug('Selected slices: %s', list(conf['slices'].keys()))
+        if conf['mergeRoutesFiles']:
+            logging.warning("Cannot merge route files if slices are limted. Overriding mergeRouteFiles.")
+            conf['mergeRoutesFiles'] = False
 
     mobility = MobilityGenerator(conf, profiling=args.profiling)
     mobility.mobility_generation()
