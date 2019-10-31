@@ -41,7 +41,7 @@ LAST_STOP_PLACEHOLDER = -42.42
 def logs():
     """ Log init. """
     stdout_handler = logging.StreamHandler(sys.stdout)
-    logging.basicConfig(handlers=[stdout_handler], level=logging.INFO,
+    logging.basicConfig(handlers=[stdout_handler], level=logging.DEBUG,
                         format='[%(asctime)s] %(levelname)s: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -70,10 +70,14 @@ def _load_configurations(filename):
     return json.loads(open(filename).read())
 
 ## Activity
-Activity = collections.namedtuple(
+_Activity = collections.namedtuple(
     'Activity',
     ['activity', 'fromEdge', 'toEdge', 'arrivalPos', 'start', 'duration'],
-    defaults=(None,) * 6)
+)
+
+def Activity(activity=None, fromEdge=None, toEdge=None, arrivalPos=None, start=None, duration=None):
+    return _Activity(activity, fromEdge, toEdge, arrivalPos, start, duration)
+
 
 class TripGenerationGenericError(Exception):
     """ During the trip generation, various erroroneous states can be reached.
