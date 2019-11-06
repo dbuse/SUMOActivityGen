@@ -56,6 +56,10 @@ def get_options(cmd_args):
     parser.add_argument(
         '--slice', '-s', type=int, dest='slices', action='append')
     parser.add_argument(
+        '--step', '-S', type=int, default=1)
+    parser.add_argument(
+        '--offset', '-O', type=int, default=0)
+    parser.add_argument(
         '--profiling', dest='profiling', action='store_true',
         help='Enable Python3 cProfile feature.')
     parser.add_argument(
@@ -309,9 +313,14 @@ class MobilityGenerator():
         logging.info('Population: %d', self._conf['population']['entities'])
 
         for m_slice in self._conf['slices'].keys():
-            self._conf['slices'][m_slice]['tot'] = int(
-                self._conf['population']['entities'] * self._conf['slices'][m_slice]['perc'])
-            logging.info('\t %s: %d', m_slice, self._conf['slices'][m_slice]['tot'])
+            self._conf['slices'][m_slice]['entity_ids'] = range(
+                int(self._conf['offset']),
+                int(self._conf['population']['entities'] * self._conf['slices'][m_slice]['perc']),
+                int(self._conf['step'])
+            )
+            # self._conf['slices'][m_slice]['tot'] = int(
+            #     self._conf['population']['entities'] * self._conf['slices'][m_slice]['perc'])
+            logging.info('\t %s: %d', m_slice, len(self._conf['slices'][m_slice]['entity_ids']))
 
     def _compute_trips_per_slice(self):
         """ Compute the trips for the synthetic population for each mobility slice. """
@@ -321,8 +330,10 @@ class MobilityGenerator():
         _modes_stats = collections.defaultdict(int)
 
         for name, m_slice in self._conf['slices'].items():
+            # num_entities = m_slice['tot']
+            entity_ids = m_slice['entity_ids']
             logging.info('[%s] Computing %d trips from %s to %s ... ',
-                         name, m_slice['tot'], m_slice['loc_origin'], m_slice['loc_primary'])
+                         name, len(entity_ids), m_slice['loc_origin'], m_slice['loc_primary'])
 
             ## Activity chains preparation
             activity_chains = []
@@ -336,7 +347,7 @@ class MobilityGenerator():
                 _pr = cProfile.Profile()
                 _pr.enable()
 
-            for entity_id in tqdm(range(m_slice['tot'])):
+            for entity_id in tqdm(entity_ids):
                 ## Select the activity chain
                 _index = self._random_generator.choice(
                     activity_index, p=activity_chains_weights)
@@ -1355,6 +1366,9 @@ def main(cmd_args):
 
     logging.info('Loading configuration file %s.', args.config)
     conf = _load_configurations(args.config)
+
+    conf['step'] = args.step
+    conf['offset'] = args.offset
 
     # filter slices if given as args
     if args.slices:
